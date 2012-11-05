@@ -1,0 +1,21 @@
+{
+  "author": "Mirko Kiefer <mail@mirkokiefer.com>",
+  "name": "SyncStore",
+  "version": "0.0.0",
+  "repository": {
+    "url": ""
+  },
+  "main": "lib/index.js",
+  "engines": {
+    "node": ">=0.8"
+  },
+  "dependencies": {
+    "synclib": "*",
+    "content-addressable": "0.0.5",
+    "async": "*",
+    "express": "*",
+    "underscore": "*"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {}
+}
