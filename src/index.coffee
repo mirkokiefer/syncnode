@@ -23,6 +23,8 @@ createApp = ({blobStore, repository}) ->
   app.get '/trees', (req, res) ->
 
   app.post '/trees', (req, res) ->
+    repository.store.writeAll req.body, (err, hashs) ->
+      res.send treeHashs: hashs
 
   app.put '/head/:branch', (req, res) ->
 
