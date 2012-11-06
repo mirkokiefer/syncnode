@@ -9,6 +9,7 @@ createApp = ({blobStore, repository, headStore}) ->
     app.use express.cookieSession({secret: 'SyncStore'})
     app.use express.bodyParser()
     app.use express.methodOverride()
+    app.use express.query()
     app.use app.router
 
   app.configure 'development', -> app.use express.errorHandler dumpExceptions: true, showStack: true
@@ -19,8 +20,12 @@ createApp = ({blobStore, repository, headStore}) ->
   app.get '/changes', (req, res) ->
 
   app.get '/common-tree', (req, res) ->
+    commonTree = repository.commonCommit req.query.tree1, req.query.tree2
+    res.send commonTree: if commonTree then commonTree else null
 
   app.get '/trees', (req, res) ->
+    patch = repository.patchData repository.patchHashs from: req.query.from, to: req.query.to
+    res.send patch
 
   app.post '/trees', (req, res) ->
     repository.store.writeAll req.body, (err, hashs) ->
