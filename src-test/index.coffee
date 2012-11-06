@@ -47,7 +47,7 @@ describe 'http-interface', ->
       data = data: "some data"
       req.post(url '/blob').send(data).end (res) ->
         hash = res.body.hash
-        req.get(url '/blob/'+hash).set('Accept', 'application/json').end (res) ->
+        req.get(url '/blob/'+hash).end (res) ->
           assert.equal res.body.data, data.data
           done()
   describe 'handling trees', ->

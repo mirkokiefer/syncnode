@@ -98,7 +98,7 @@
         return req.post(url('/blob')).send(data).end(function(res) {
           var hash;
           hash = res.body.hash;
-          return req.get(url('/blob/' + hash)).set('Accept', 'application/json').end(function(res) {
+          return req.get(url('/blob/' + hash)).end(function(res) {
             assert.equal(res.body.data, data.data);
             return done();
           });
