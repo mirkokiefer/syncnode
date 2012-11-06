@@ -1,5 +1,3 @@
-{Repository, TreeStore, backend} = require 'synclib'
-contentAddressable = require 'content-addressable'
 express = require 'express'
 _ = require 'underscore'
 async = require 'async'
@@ -31,7 +29,12 @@ createApp = ({blobStore, repository}) ->
   app.get '/head/:branch', (req, res) ->
 
   app.post '/blob', (req, res) ->
+    blobStore.write JSON.stringify(req.body), (err, hash) ->
+      res.send hash: hash
 
   app.get '/blob/:hash', (req, res) ->
+    blobStore.read req.params.hash, (err, data) ->
+      res.send JSON.parse(data)
+  app
 
 module.exports = createApp

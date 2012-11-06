@@ -16,6 +16,8 @@
     "express": "*",
     "underscore": "*"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "superagent": "~0.9.8"  
+  },
   "optionalDependencies": {}
 }
