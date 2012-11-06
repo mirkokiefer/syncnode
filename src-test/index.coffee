@@ -3,6 +3,7 @@ assert = require 'assert'
 req = require 'superagent'
 {Repository, TreeStore, backend} = require 'synclib'
 contentAddressable = require 'content-addressable'
+createMemoryStore = require('pluggable-store').server().memory
 createApp = require '../lib/index'
 
 testPort = 3000
@@ -10,8 +11,9 @@ url = (path) -> 'http://localhost:' + testPort + path
 
 serverBlobStore = contentAddressable.fileSystem(process.env.HOME+'/syncstore')
 serverTreeStore = contentAddressable.memory()
+serverHeadStore = createMemoryStore()
 serverRepo = new Repository serverTreeStore
-app = createApp {blobStore: serverBlobStore, repository: serverRepo}
+app = createApp {blobStore: serverBlobStore, repository: serverRepo, headStore: serverHeadStore}
 
 client1BlobStore = contentAddressable.memory()
 client1TreeStore = contentAddressable.memory()
@@ -40,7 +42,7 @@ before (done) -> app.listen testPort, 'localhost', done
 after (done) -> serverBlobStore.store.adapter.delete done
 
 describe 'http-interface', ->
-  describe '/blob', ->
+  describe 'blob storage', ->
     it 'should POST some data and return the hash to GET it', (done) ->
       data = data: "some data"
       req.post(url '/blob').send(data).end (res) ->
@@ -48,7 +50,7 @@ describe 'http-interface', ->
         req.get(url '/blob/'+hash).set('Accept', 'application/json').end (res) ->
           assert.equal res.body.data, data.data
           done()
-  describe '/trees', ->
+  describe 'handling trees', ->
     it 'should do some local commits on client1 and POST the diff to the server', (done) ->
       for each in dataA
         client1Branch.commit each
@@ -58,3 +60,8 @@ describe 'http-interface', ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
         done()
+    it 'should set client1\'s head on the server', (done) ->
+      req.put(url '/head/client1').send(hash: client1Branch.head).end (res) ->
+        req.get(url '/head/client1').end (res) ->
+          assert.equal res.body.hash, client1Branch.head
+          done()

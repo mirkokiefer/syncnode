@@ -2,7 +2,7 @@ express = require 'express'
 _ = require 'underscore'
 async = require 'async'
 
-createApp = ({blobStore, repository}) ->
+createApp = ({blobStore, repository, headStore}) ->
   app = express()
   app.configure ->
     app.use express.cookieParser()
@@ -27,8 +27,11 @@ createApp = ({blobStore, repository}) ->
       res.send treeHashs: hashs
 
   app.put '/head/:branch', (req, res) ->
+    headStore.write req.params.branch, req.body.hash
+    res.send ok: 'success'
 
   app.get '/head/:branch', (req, res) ->
+    res.send hash: headStore.read req.params.branch
 
   app.post '/blob', (req, res) ->
     blobStore.write JSON.stringify(req.body), (err, hash) ->

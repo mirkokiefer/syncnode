@@ -17,6 +17,7 @@
     "underscore": "*"
   },
   "devDependencies": {
-    "superagent": "~0.9.8"
+    "superagent": "~0.9.8",
+    "pluggable-store": "~0.0.5"
   }
 }
