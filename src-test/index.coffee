@@ -16,17 +16,16 @@ serverHeadStore = createMemoryStore()
 serverRepo = new Repository serverTreeStore
 app = createApp {blobStore: serverBlobStore, repository: serverRepo, headStore: serverHeadStore}
 
-client1BlobStore = contentAddressable.memory()
-client1TreeStore = contentAddressable.memory()
-client1Repo = new Repository client1TreeStore
-client1Branch = client1Repo.branch()
-client1KnownClient2Branch = null
+class Client
+  constructor: ->
+    @blobStore = contentAddressable.memory()
+    @treeStore = contentAddressable.memory()
+    @repo = new Repository @treeStore
+    @branch = @repo.branch()
+    @remotes = {}
 
-client2BlobStore = contentAddressable.memory()
-client2TreeStore = contentAddressable.memory()
-client2Repo = new Repository client2TreeStore
-client2Branch = client2Repo.branch()
-client2KnownClient1Branch = null
+client1 = new Client()
+client2 = new Client()
 
 dataA = [
   {'a': "hash1", 'b/c': "hash2", 'b/d': "hash3"}
@@ -55,36 +54,35 @@ describe 'http-interface', ->
           done()
   describe 'client1', ->
     it 'should do some local commits and POST the diff to the server', (done) ->
-      client1Branch.commit each for each in dataA
-      diffHashs = client1Branch.patchHashs()
-      diff = client1Repo.patchData diffHashs
+      client1.branch.commit each for each in dataA
+      diffHashs = client1.branch.patchHashs()
+      diff = client1.repo.patchData diffHashs
       req.post(url '/trees').send(diff.trees).end (res) ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
         done()
     it 'should set its head on the server', (done) ->
-      req.put(url '/head/client1').send(hash: client1Branch.head).end (res) ->
+      req.put(url '/head/client1').send(hash: client1.branch.head).end (res) ->
         req.get(url '/head/client1').end (res) ->
-          assert.equal res.body.hash, client1Branch.head
+          assert.equal res.body.hash, client1.branch.head
           done()
   describe 'client2', ->
     it 'should do some commits and push the diff', (done) ->
-      client2Branch.commit each for each in dataB
-      diff = client2Repo.patchData client2Branch.patchHashs()
+      client2.branch.commit each for each in dataB
+      diff = client2.repo.patchData client2.branch.patchHashs()
       req.post(url '/trees').send(diff.trees).end () -> done()
     it 'should ask for client1\'s head and the common commit', (done) ->
       req.get(url '/head/client1').end (res) ->
-        client1Head = res.body.hash
-        client2KnownClient1Branch = client2Repo.branch client1Head
-        req.get(url '/common-tree?tree1='+client2Branch.head+'&tree2='+client1Head).end (res) ->
+        client2.remotes.client1 = res.body.hash
+        req.get(url '/common-tree?tree1='+client2.branch.head+'&tree2='+client2.remotes.client1).end (res) ->
           assert.equal res.commonTree, null
           done()
     it 'should ask for the full diff to client1 head since there is no common tree', (done) ->
-      req.get(url '/trees?to='+client2KnownClient1Branch.head).end (res) ->
-        client2TreeStore.writeAll res.body.trees
+      req.get(url '/trees?to='+client2.remotes.client1).end (res) ->
+        client2.treeStore.writeAll res.body.trees
         done()
     it 'should do a local merge of client1s diff', ->
-      oldHead = client2Branch.head
-      head = client2Branch.merge ref: client2KnownClient1Branch
-      headTree = client2TreeStore.read head
-      assert.equal difference(headTree.ancestors, [client2KnownClient1Branch.head, oldHead]).length, 0
+      oldHead = client2.branch.head
+      head = client2.branch.merge ref: client2.remotes.client1
+      headTree = client2.treeStore.read head
+      assert.equal difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0
