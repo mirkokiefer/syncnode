@@ -166,7 +166,7 @@
           return done();
         });
       });
-      return it('should do a local merge of client1s diff', function() {
+      it('should do a local merge of client1s diff', function() {
         var head, headTree, oldHead;
         oldHead = client2.branch.head;
         head = client2.branch.merge({
@@ -174,6 +174,31 @@
         });
         headTree = client2.treeStore.read(head);
         return assert.equal(difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0);
+      });
+      return it('should push its new diff to the server', function() {
+        /*
+              this is trickier than I thought:
+              diff1 = the diff between my last push and my current head
+              this includes redundant information
+              diff2 = diff between my last push and client1 head
+              diff to be pushed = diff1 - diff2
+              right?
+              I should update my local remotes only after having pulled the diff
+              then I can use it to compute diff2 safely - otherwise I might lack data
+              if we consider a multi-master setup its more complex:
+                I would have to check if the servers remote head is more or less advanced
+                the safest way is to always first do a pull - but we also dont want to waste time to do pushs...
+                if the server has an ancestor of my client1 head:
+                  its simple - we just use the servers client1 head to compute diff2
+                if the server is further than my client1 head:
+                  we just use our local one to push
+                if the server is on a fork
+                  we first have to find out that he is - by doing a common-tree call
+                maybe thats always the best thing to do - call common-tree to find out what to use as client1 head
+                I have to think about this - especially on how to scale this to many peers.
+                I might have to rewrite branch.patch to let me compute a patch for multiple branches.
+        */
+
       });
     });
   });
