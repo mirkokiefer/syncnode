@@ -125,6 +125,7 @@
             each = _ref1[i];
             assert.equal(each, diffHashs.trees[i]);
           }
+          client1.remotes.client1 = client1.branch.head;
           return done();
         });
       });
@@ -139,7 +140,7 @@
         });
       });
     });
-    return describe('client2', function() {
+    describe('client2', function() {
       it('should do some commits and push the diff', function(done) {
         var diff, each, _i, _len;
         for (_i = 0, _len = dataB.length; _i < _len; _i++) {
@@ -148,6 +149,7 @@
         }
         diff = client2.repo.patchData(client2.branch.patchHashs());
         return req.post(url('/trees')).send(diff.trees).end(function() {
+          client2.remotes.client2 = client2.branch.head;
           return done();
         });
       });
@@ -175,30 +177,51 @@
         headTree = client2.treeStore.read(head);
         return assert.equal(difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0);
       });
-      return it('should push its new diff to the server', function() {
-        /*
-              this is trickier than I thought:
-              diff1 = the diff between my last push and my current head
-              this includes redundant information
-              diff2 = diff between my last push and client1 head
-              diff to be pushed = diff1 - diff2
-              right?
-              I should update my local remotes only after having pulled the diff
-              then I can use it to compute diff2 safely - otherwise I might lack data
-              if we consider a multi-master setup its more complex:
-                I would have to check if the servers remote head is more or less advanced
-                the safest way is to always first do a pull - but we also dont want to waste time to do pushs...
-                if the server has an ancestor of my client1 head:
-                  its simple - we just use the servers client1 head to compute diff2
-                if the server is further than my client1 head:
-                  we just use our local one to push
-                if the server is on a fork
-                  we first have to find out that he is - by doing a common-tree call
-                maybe thats always the best thing to do - call common-tree to find out what to use as client1 head
-                I have to think about this - especially on how to scale this to many peers.
-                I might have to rewrite branch.patch to let me compute a patch for multiple branches.
-        */
-
+      it('should push its new diff to the server', function(done) {
+        var knownPatch, patch, patchData, remote, remoteHead, _ref1;
+        patch = client2.branch.patchHashs({
+          from: client2.remotes.client2
+        });
+        _ref1 = client2.remotes;
+        for (remote in _ref1) {
+          remoteHead = _ref1[remote];
+          knownPatch = client2.repo.patchHashs({
+            from: client2.remotes.client2,
+            to: remoteHead
+          });
+          patch.trees = difference(patch.trees, knownPatch.trees);
+          patch.data = difference(patch.data, knownPatch.data);
+        }
+        patchData = client2.repo.patchData(patch);
+        return req.post(url('/trees')).send(patchData.trees).end(function() {
+          client2.remotes.client2 = client2.branch.head;
+          return done();
+        });
+      });
+      return it('should update its head on the server', function(done) {
+        return req.put(url('/head/client2')).send({
+          hash: client2.branch.head
+        }).end(function(res) {
+          return done();
+        });
+      });
+    });
+    return describe('client1 - step 2', function() {
+      it('should ask for client2 head and fetch the patch', function(done) {
+        return req.get(url('/head/client2')).end(function(res) {
+          client1.remotes.client2 = res.body.hash;
+          return req.get(url('/trees?from=' + client1.remotes.client1 + '&to=' + client1.remotes.client2)).end(function(res) {
+            client1.treeStore.writeAll(res.body.trees);
+            return done();
+          });
+        });
+      });
+      return it('does a local fast-forward merge', function() {
+        var head;
+        head = client1.branch.merge({
+          ref: client1.remotes.client2
+        });
+        return assert.equal(head, client1.remotes.client2);
       });
     });
   });

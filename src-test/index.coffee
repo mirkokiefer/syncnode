@@ -59,6 +59,7 @@ describe 'http-interface', ->
       req.post(url '/trees').send(diff.trees).end (res) ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
+        client1.remotes.client1 = client1.branch.head
         done()
     it 'should set its head on the server', (done) ->
       req.put(url '/head/client1').send(hash: client1.branch.head).end (res) ->
@@ -69,7 +70,9 @@ describe 'http-interface', ->
     it 'should do some commits and push the diff', (done) ->
       client2.branch.commit each for each in dataB
       diff = client2.repo.patchData client2.branch.patchHashs()
-      req.post(url '/trees').send(diff.trees).end () -> done()
+      req.post(url '/trees').send(diff.trees).end () ->
+        client2.remotes.client2 = client2.branch.head
+        done()
     it 'should ask for client1\'s head and the common commit', (done) ->
       req.get(url '/head/client1').end (res) ->
         client2.remotes.client1 = res.body.hash
@@ -85,27 +88,28 @@ describe 'http-interface', ->
       head = client2.branch.merge ref: client2.remotes.client1
       headTree = client2.treeStore.read head
       assert.equal difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0
-    it 'should push its new diff to the server', ->
-      ###
-      this is trickier than I thought:
-      diff1 = the diff between my last push and my current head
-      this includes redundant information
-      diff2 = diff between my last push and client1 head
-      diff to be pushed = diff1 - diff2
-      right?
-      I should update my local remotes only after having pulled the diff
-      then I can use it to compute diff2 safely - otherwise I might lack data
-      if we consider a multi-master setup its more complex:
-        I would have to check if the servers remote head is more or less advanced
-        the safest way is to always first do a pull - but we also dont want to waste time to do pushs...
-        if the server has an ancestor of my client1 head:
-          its simple - we just use the servers client1 head to compute diff2
-        if the server is further than my client1 head:
-          we just use our local one to push
-        if the server is on a fork
-          we first have to find out that he is - by doing a common-tree call
-        maybe thats always the best thing to do - call common-tree to find out what to use as client1 head
-        I have to think about this - especially on how to scale this to many peers.
-        I might have to rewrite branch.patch to let me compute a patch for multiple branches.
-      ###
+    it 'should push its new diff to the server', (done) ->
+      patch = client2.branch.patchHashs from: client2.remotes.client2
+      for remote, remoteHead of client2.remotes
+        knownPatch = client2.repo.patchHashs from: client2.remotes.client2, to: remoteHead
+        patch.trees = difference patch.trees, knownPatch.trees
+        patch.data = difference patch.data, knownPatch.data
+      patchData = client2.repo.patchData patch
+      req.post(url '/trees').send(patchData.trees).end ->
+        client2.remotes.client2 = client2.branch.head
+        done()
+    it 'should update its head on the server', (done) ->
+      req.put(url '/head/client2').send(hash: client2.branch.head).end (res) ->
+        done()
+  describe 'client1 - step 2', ->
+    it 'should ask for client2 head and fetch the patch', (done) ->
+      req.get(url '/head/client2').end (res) ->
+        client1.remotes.client2 = res.body.hash
+        req.get(url '/trees?from='+client1.remotes.client1+'&to='+client1.remotes.client2).end (res) ->
+          client1.treeStore.writeAll res.body.trees
+          done()
+    it 'does a local fast-forward merge', ->
+      head = client1.branch.merge ref: client1.remotes.client2
+      assert.equal head, client1.remotes.client2
+
       
