@@ -153,17 +153,14 @@
           return done();
         });
       });
-      it('should ask for client1\'s head and the common commit', function(done) {
+      it('should ask for client1\'s head', function(done) {
         return req.get(url('/head/client1')).end(function(res) {
           client2.remotes.client1 = res.body.hash;
-          return req.get(url('/common-tree?tree1=' + client2.branch.head + '&tree2=' + client2.remotes.client1)).end(function(res) {
-            assert.equal(res.commonTree, null);
-            return done();
-          });
+          return done();
         });
       });
-      it('should ask for the full diff to client1 head since there is no common tree', function(done) {
-        return req.get(url('/trees?to=' + client2.remotes.client1)).end(function(res) {
+      it('should ask for the patch to client1 head', function(done) {
+        return req.get(url('/trees?from=' + client2.remotes.client2 + '&to=' + client2.remotes.client1)).end(function(res) {
           client2.treeStore.writeAll(res.body.trees);
           return done();
         });

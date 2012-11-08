@@ -19,10 +19,6 @@ createApp = ({blobStore, repository, headStore}) ->
 
   app.get '/changes', (req, res) ->
 
-  app.get '/common-tree', (req, res) ->
-    commonTree = repository.commonCommit req.query.tree1, req.query.tree2
-    res.send commonTree: if commonTree then commonTree else null
-
   app.get '/trees', (req, res) ->
     patch = repository.patchData repository.patchHashs from: req.query.from, to: req.query.to
     res.send patch

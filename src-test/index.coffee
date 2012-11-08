@@ -73,14 +73,12 @@ describe 'http-interface', ->
       req.post(url '/trees').send(diff.trees).end () ->
         client2.remotes.client2 = client2.branch.head
         done()
-    it 'should ask for client1\'s head and the common commit', (done) ->
+    it 'should ask for client1\'s head', (done) ->
       req.get(url '/head/client1').end (res) ->
         client2.remotes.client1 = res.body.hash
-        req.get(url '/common-tree?tree1='+client2.branch.head+'&tree2='+client2.remotes.client1).end (res) ->
-          assert.equal res.commonTree, null
-          done()
-    it 'should ask for the full diff to client1 head since there is no common tree', (done) ->
-      req.get(url '/trees?to='+client2.remotes.client1).end (res) ->
+        done()
+    it 'should ask for the patch to client1 head', (done) ->
+      req.get(url '/trees?from='+client2.remotes.client2+'&to='+client2.remotes.client1).end (res) ->
         client2.treeStore.writeAll res.body.trees
         done()
     it 'should do a local merge of client1s diff', ->
