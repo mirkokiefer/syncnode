@@ -19,11 +19,11 @@ createApp = ({blobStore, repository, headStore}) ->
 
   app.get '/changes', (req, res) ->
 
-  app.get '/trees', (req, res) ->
+  app.get '/patch', (req, res) ->
     patch = repository.patchData repository.patchHashs from: req.query.from, to: req.query.to
     res.send patch
 
-  app.post '/trees', (req, res) ->
+  app.post '/patch', (req, res) ->
     repository.store.writeAll req.body, (err, hashs) ->
       res.send treeHashs: hashs
 

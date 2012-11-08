@@ -118,7 +118,7 @@
         }
         diffHashs = client1.branch.patchHashs();
         diff = client1.repo.patchData(diffHashs);
-        return req.post(url('/trees')).send(diff.trees).end(function(res) {
+        return req.post(url('/patch')).send(diff.trees).end(function(res) {
           var i, _j, _len1, _ref1;
           _ref1 = res.body.treeHashs;
           for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
@@ -148,7 +148,7 @@
           client2.branch.commit(each);
         }
         diff = client2.repo.patchData(client2.branch.patchHashs());
-        return req.post(url('/trees')).send(diff.trees).end(function() {
+        return req.post(url('/patch')).send(diff.trees).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });
@@ -160,7 +160,7 @@
         });
       });
       it('should ask for the patch to client1 head', function(done) {
-        return req.get(url('/trees?from=' + client2.remotes.client2 + '&to=' + client2.remotes.client1)).end(function(res) {
+        return req.get(url('/patch?from=' + client2.remotes.client2 + '&to=' + client2.remotes.client1)).end(function(res) {
           client2.treeStore.writeAll(res.body.trees);
           return done();
         });
@@ -190,7 +190,7 @@
           patch.data = difference(patch.data, knownPatch.data);
         }
         patchData = client2.repo.patchData(patch);
-        return req.post(url('/trees')).send(patchData.trees).end(function() {
+        return req.post(url('/patch')).send(patchData.trees).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });
@@ -207,7 +207,7 @@
       it('should ask for client2 head and fetch the patch', function(done) {
         return req.get(url('/head/client2')).end(function(res) {
           client1.remotes.client2 = res.body.hash;
-          return req.get(url('/trees?from=' + client1.remotes.client1 + '&to=' + client1.remotes.client2)).end(function(res) {
+          return req.get(url('/patch?from=' + client1.remotes.client1 + '&to=' + client1.remotes.client2)).end(function(res) {
             client1.treeStore.writeAll(res.body.trees);
             return done();
           });
