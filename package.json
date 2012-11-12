@@ -10,8 +10,8 @@
     "node": ">=0.8"
   },
   "dependencies": {
-    "synclib": "~0.1.3",
-    "content-addressable": "~0.0.5",
+    "synclib": "0.1.4",
+    "content-addressable": "0.0.6",
     "async": "*",
     "express": "*",
     "underscore": "*"

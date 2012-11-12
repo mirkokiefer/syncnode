@@ -3,24 +3,18 @@ assert = require 'assert'
 req = require 'superagent'
 {Repository, TreeStore, backend} = require 'synclib'
 contentAddressable = require 'content-addressable'
-createMemoryStore = require('pluggable-store').server().memory
 createApp = require '../lib/index'
 {difference} = require 'underscore'
 
 testPort = 3000
 url = (path) -> 'http://localhost:' + testPort + path
 
-serverBlobStore = contentAddressable.fileSystem(process.env.HOME+'/syncstore')
-serverTreeStore = contentAddressable.memory()
-serverHeadStore = createMemoryStore()
-serverRepo = new Repository serverTreeStore
-app = createApp {blobStore: serverBlobStore, repository: serverRepo, headStore: serverHeadStore}
+app = createApp()
 
 class Client
   constructor: ->
     @blobStore = contentAddressable.memory()
-    @treeStore = contentAddressable.memory()
-    @repo = new Repository @treeStore
+    @repo = new Repository()
     @branch = @repo.branch()
     @remotes = {}
 
@@ -40,7 +34,6 @@ dataB = [
 ]
 
 before (done) -> app.listen testPort, 'localhost', done
-after (done) -> serverBlobStore.store.adapter.delete done
 
 describe 'http-interface', ->
   describe 'blob storage', ->
@@ -54,9 +47,9 @@ describe 'http-interface', ->
   describe 'client1', ->
     it 'should do some local commits and POST the diff to the server', (done) ->
       client1.branch.commit each for each in dataA
-      diffHashs = client1.branch.patchHashs()
-      diff = client1.repo.patchData diffHashs
-      req.post(url '/patch').send(diff.trees).end (res) ->
+      diffHashs = client1.branch.deltaHashs()
+      diff = client1.repo.deltaData diffHashs
+      req.post(url '/delta').send(diff.trees).end (res) ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
         client1.remotes.client1 = client1.branch.head
@@ -69,42 +62,42 @@ describe 'http-interface', ->
   describe 'client2', ->
     it 'should do some commits and push the diff', (done) ->
       client2.branch.commit each for each in dataB
-      diff = client2.repo.patchData client2.branch.patchHashs()
-      req.post(url '/patch').send(diff.trees).end () ->
+      diff = client2.repo.deltaData client2.branch.deltaHashs()
+      req.post(url '/delta').send(diff.trees).end () ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should ask for client1\'s head', (done) ->
       req.get(url '/head/client1').end (res) ->
         client2.remotes.client1 = res.body.hash
         done()
-    it 'should ask for the patch to client1 head', (done) ->
-      req.get(url '/patch?from='+client2.remotes.client2+'&to='+client2.remotes.client1).end (res) ->
-        client2.treeStore.writeAll res.body.trees
+    it 'should ask for the delta to client1 head', (done) ->
+      req.get(url '/delta?from='+client2.remotes.client2+'&to='+client2.remotes.client1).end (res) ->
+        client2.repo.treeStore.writeAll res.body.trees
         done()
     it 'should do a local merge of client1s diff', ->
       oldHead = client2.branch.head
       head = client2.branch.merge ref: client2.remotes.client1
-      headTree = client2.treeStore.read head
+      headTree = client2.repo.treeStore.read head
       assert.equal difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0
     it 'should push its new diff to the server', (done) ->
-      patch = client2.branch.patchHashs from: client2.remotes.client2
+      delta = client2.branch.deltaHashs from: client2.remotes.client2
       for remote, remoteHead of client2.remotes
-        knownPatch = client2.repo.patchHashs from: client2.remotes.client2, to: remoteHead
-        patch.trees = difference patch.trees, knownPatch.trees
-        patch.data = difference patch.data, knownPatch.data
-      patchData = client2.repo.patchData patch
-      req.post(url '/patch').send(patchData.trees).end ->
+        knownPatch = client2.repo.deltaHashs from: client2.remotes.client2, to: remoteHead
+        delta.trees = difference delta.trees, knownPatch.trees
+        delta.data = difference delta.data, knownPatch.data
+      deltaData = client2.repo.deltaData delta
+      req.post(url '/delta').send(deltaData.trees).end ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should update its head on the server', (done) ->
       req.put(url '/head/client2').send(hash: client2.branch.head).end (res) ->
         done()
   describe 'client1 - step 2', ->
-    it 'should ask for client2 head and fetch the patch', (done) ->
+    it 'should ask for client2 head and fetch the delta', (done) ->
       req.get(url '/head/client2').end (res) ->
         client1.remotes.client2 = res.body.hash
-        req.get(url '/patch?from='+client1.remotes.client1+'&to='+client1.remotes.client2).end (res) ->
-          client1.treeStore.writeAll res.body.trees
+        req.get(url '/delta?from='+client1.remotes.client1+'&to='+client1.remotes.client2).end (res) ->
+          client1.repo.treeStore.writeAll res.body.trees
           done()
     it 'does a local fast-forward merge', ->
       head = client1.branch.merge ref: client1.remotes.client2

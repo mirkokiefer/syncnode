@@ -1,9 +1,16 @@
 express = require 'express'
 _ = require 'underscore'
 async = require 'async'
+contentAddressable = require 'content-addressable'
+createMemoryStore = require('pluggable-store').memory
+{Repository} = require 'synclib'
 
-createApp = ({blobStore, repository, headStore}) ->
+createApp = ({blobStore, repository, headStore}={}) ->
   app = express()
+  app.blobStore = if blobStore then blobStore else contentAddressable.memory()
+  app.repository = if repository then repository else new Repository()
+  app.headStore = if headStore then headStore else createMemoryStore()
+  [blobStore, repository, headStore] = [app.blobStore, app.repository, app.headStore]
   app.configure ->
     app.use express.cookieParser()
     app.use express.cookieSession({secret: 'SyncStore'})
@@ -19,12 +26,12 @@ createApp = ({blobStore, repository, headStore}) ->
 
   app.get '/changes', (req, res) ->
 
-  app.get '/patch', (req, res) ->
-    patch = repository.patchData repository.patchHashs from: req.query.from, to: req.query.to
-    res.send patch
+  app.get '/delta', (req, res) ->
+    delta = repository.deltaData repository.deltaHashs from: req.query.from, to: req.query.to
+    res.send delta
 
-  app.post '/patch', (req, res) ->
-    repository.store.writeAll req.body, (err, hashs) ->
+  app.post '/delta', (req, res) ->
+    repository.treeStore.writeAll req.body, (err, hashs) ->
       res.send treeHashs: hashs
 
   app.put '/head/:branch', (req, res) ->
