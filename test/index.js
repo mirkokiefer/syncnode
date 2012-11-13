@@ -14,7 +14,7 @@
 
   difference = require('underscore').difference;
 
-  testPort = 3000;
+  testPort = 3001;
 
   url = function(path) {
     return 'http://localhost:' + testPort + path;
@@ -99,7 +99,9 @@
         }
         diffHashs = client1.branch.deltaHashs();
         diff = client1.repo.deltaData(diffHashs);
-        return req.post(url('/delta')).send(diff.trees).end(function(res) {
+        return req.post(url('/delta')).send({
+          trees: diff.trees
+        }).end(function(res) {
           var i, _j, _len1, _ref1;
           _ref1 = res.body.treeHashs;
           for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
@@ -129,7 +131,9 @@
           client2.branch.commit(each);
         }
         diff = client2.repo.deltaData(client2.branch.deltaHashs());
-        return req.post(url('/delta')).send(diff.trees).end(function() {
+        return req.post(url('/delta')).send({
+          trees: diff.trees
+        }).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });
@@ -171,7 +175,9 @@
           delta.data = difference(delta.data, knownPatch.data);
         }
         deltaData = client2.repo.deltaData(delta);
-        return req.post(url('/delta')).send(deltaData.trees).end(function() {
+        return req.post(url('/delta')).send({
+          trees: deltaData.trees
+        }).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });

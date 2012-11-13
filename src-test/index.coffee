@@ -6,7 +6,7 @@ contentAddressable = require 'content-addressable'
 createApp = require '../lib/index'
 {difference} = require 'underscore'
 
-testPort = 3000
+testPort = 3001
 url = (path) -> 'http://localhost:' + testPort + path
 
 app = createApp()
@@ -49,7 +49,7 @@ describe 'http-interface', ->
       client1.branch.commit each for each in dataA
       diffHashs = client1.branch.deltaHashs()
       diff = client1.repo.deltaData diffHashs
-      req.post(url '/delta').send(diff.trees).end (res) ->
+      req.post(url '/delta').send(trees: diff.trees).end (res) ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
         client1.remotes.client1 = client1.branch.head
@@ -63,7 +63,7 @@ describe 'http-interface', ->
     it 'should do some commits and push the diff', (done) ->
       client2.branch.commit each for each in dataB
       diff = client2.repo.deltaData client2.branch.deltaHashs()
-      req.post(url '/delta').send(diff.trees).end () ->
+      req.post(url '/delta').send(trees: diff.trees).end () ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should ask for client1\'s head', (done) ->
@@ -86,7 +86,7 @@ describe 'http-interface', ->
         delta.trees = difference delta.trees, knownPatch.trees
         delta.data = difference delta.data, knownPatch.data
       deltaData = client2.repo.deltaData delta
-      req.post(url '/delta').send(deltaData.trees).end ->
+      req.post(url '/delta').send(trees: deltaData.trees).end ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should update its head on the server', (done) ->
