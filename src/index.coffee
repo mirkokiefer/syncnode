@@ -38,6 +38,9 @@ createApp = ({blobStore, repository, headStore}={}) ->
     headStore.write req.params.branch, req.body.hash
     res.send ok: 'success'
 
+  app.get '/head', (req, res) ->
+    res.send heads: (name: each, head: headStore.read each for each in headStore.keys())
+
   app.get '/head/:branch', (req, res) ->
     res.send hash: headStore.read req.params.branch
 

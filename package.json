@@ -1,7 +1,7 @@
 {
   "author": "Mirko Kiefer <mail@mirkokiefer.com>",
   "name": "syncnode",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": {
     "url": ""
   },
@@ -12,12 +12,12 @@
   "dependencies": {
     "synclib": "0.1.4",
     "content-addressable": "0.0.6",
+    "pluggable-store": "0.0.8",
     "async": "*",
     "express": "*",
     "underscore": "*"
   },
   "devDependencies": {
-    "superagent": "~0.9.8",
-    "pluggable-store": "~0.0.5"
+    "superagent": "~0.9.8"
   }
 }

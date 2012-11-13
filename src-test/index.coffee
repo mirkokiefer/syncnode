@@ -102,5 +102,9 @@ describe 'http-interface', ->
     it 'does a local fast-forward merge', ->
       head = client1.branch.merge ref: client1.remotes.client2
       assert.equal head, client1.remotes.client2
+    it 'fetches all client heads', (done) ->
+      req.get(url '/head').end (res) ->
+        assert.equal res.body.heads[0].name, 'client1'
+        done()
 
       

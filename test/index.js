@@ -200,12 +200,18 @@
           });
         });
       });
-      return it('does a local fast-forward merge', function() {
+      it('does a local fast-forward merge', function() {
         var head;
         head = client1.branch.merge({
           ref: client1.remotes.client2
         });
         return assert.equal(head, client1.remotes.client2);
+      });
+      return it('fetches all client heads', function(done) {
+        return req.get(url('/head')).end(function(res) {
+          assert.equal(res.body.heads[0].name, 'client1');
+          return done();
+        });
       });
     });
   });
