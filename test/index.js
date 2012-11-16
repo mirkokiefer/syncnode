@@ -162,14 +162,14 @@
       it('should push its new diff to the server', function(done) {
         var delta, deltaData, knownPatch, remote, remoteHead, _ref1;
         delta = client2.branch.deltaHashs({
-          from: client2.remotes.client2
+          from: [client2.remotes.client2]
         });
         _ref1 = client2.remotes;
         for (remote in _ref1) {
           remoteHead = _ref1[remote];
           knownPatch = client2.repo.deltaHashs({
-            from: client2.remotes.client2,
-            to: remoteHead
+            from: [client2.remotes.client2],
+            to: [remoteHead]
           });
           delta.trees = difference(delta.trees, knownPatch.trees);
           delta.data = difference(delta.data, knownPatch.data);

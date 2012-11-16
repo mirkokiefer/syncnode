@@ -27,7 +27,7 @@ createApp = ({blobStore, repository, headStore}={}) ->
   app.get '/changes', (req, res) ->
 
   app.get '/delta', (req, res) ->
-    delta = repository.deltaData repository.deltaHashs from: req.query.from, to: req.query.to
+    delta = repository.deltaData repository.deltaHashs from: [req.query.from], to: [req.query.to]
     res.send delta
 
   app.post '/delta', (req, res) ->
