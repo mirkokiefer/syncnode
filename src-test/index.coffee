@@ -80,12 +80,6 @@ describe 'http-interface', ->
       headTree = client2.repo.treeStore.read head
       assert.equal difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0
     it 'should push its new diff to the server', (done) ->
-      ### understand why this is not needed anymore:
-      delta = client2.branch.deltaHashs from: [client2.remotes.client2]
-      for remote, remoteHead of client2.remotes
-        knownPatch = client2.repo.deltaHashs from: [client2.remotes.client2], to: [remoteHead]
-        delta.trees = difference delta.trees, knownPatch.trees
-        delta.data = difference delta.data, knownPatch.data###
       delta = client2.branch.deltaHashs from: values(client2.remotes)
       deltaData = client2.repo.deltaData delta
       req.post(url '/delta').send(trees: deltaData.trees).end ->
