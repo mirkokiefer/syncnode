@@ -71,7 +71,8 @@ describe 'http-interface', ->
         client2.remotes.client1 = res.body.hash
         done()
     it 'should ask for the delta to client1 head', (done) ->
-      req.get(url '/delta?from='+client2.remotes.client2+'&to='+client2.remotes.client1).end (res) ->
+      [from, to] = (JSON.stringify each for each in [[client2.remotes.client2], [client2.remotes.client1]])
+      req.get(url '/delta?from='+from+'&to='+to).end (res) ->
         client2.repo.treeStore.writeAll res.body.trees
         done()
     it 'should do a local merge of client1s diff', ->
@@ -92,7 +93,8 @@ describe 'http-interface', ->
     it 'should ask for client2 head and fetch the delta', (done) ->
       req.get(url '/head/client2').end (res) ->
         client1.remotes.client2 = res.body.hash
-        req.get(url '/delta?from='+client1.remotes.client1+'&to='+client1.remotes.client2).end (res) ->
+        [from, to] = (JSON.stringify each for each in [[client1.remotes.client1], [client1.remotes.client2]])
+        req.get(url '/delta?from='+from+'&to='+to).end (res) ->
           client1.repo.treeStore.writeAll res.body.trees
           done()
     it 'does a local fast-forward merge', ->

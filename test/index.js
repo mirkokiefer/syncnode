@@ -145,7 +145,18 @@
         });
       });
       it('should ask for the delta to client1 head', function(done) {
-        return req.get(url('/delta?from=' + client2.remotes.client2 + '&to=' + client2.remotes.client1)).end(function(res) {
+        var each, from, to, _ref2;
+        _ref2 = (function() {
+          var _i, _len, _ref2, _results;
+          _ref2 = [[client2.remotes.client2], [client2.remotes.client1]];
+          _results = [];
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            each = _ref2[_i];
+            _results.push(JSON.stringify(each));
+          }
+          return _results;
+        })(), from = _ref2[0], to = _ref2[1];
+        return req.get(url('/delta?from=' + from + '&to=' + to)).end(function(res) {
           client2.repo.treeStore.writeAll(res.body.trees);
           return done();
         });
@@ -183,8 +194,19 @@
     return describe('client1 - step 2', function() {
       it('should ask for client2 head and fetch the delta', function(done) {
         return req.get(url('/head/client2')).end(function(res) {
+          var each, from, to, _ref2;
           client1.remotes.client2 = res.body.hash;
-          return req.get(url('/delta?from=' + client1.remotes.client1 + '&to=' + client1.remotes.client2)).end(function(res) {
+          _ref2 = (function() {
+            var _i, _len, _ref2, _results;
+            _ref2 = [[client1.remotes.client1], [client1.remotes.client2]];
+            _results = [];
+            for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+              each = _ref2[_i];
+              _results.push(JSON.stringify(each));
+            }
+            return _results;
+          })(), from = _ref2[0], to = _ref2[1];
+          return req.get(url('/delta?from=' + from + '&to=' + to)).end(function(res) {
             client1.repo.treeStore.writeAll(res.body.trees);
             return done();
           });

@@ -27,7 +27,9 @@ createApp = ({blobStore, repository, headStore}={}) ->
   app.get '/changes', (req, res) ->
 
   app.get '/delta', (req, res) ->
-    delta = repository.deltaData repository.deltaHashs from: [req.query.from], to: [req.query.to]
+    [from, to] = for each in [req.query.from, req.query.to]
+      if each then JSON.parse each else []
+    delta = repository.deltaData repository.deltaHashs from: from, to: to
     res.send delta
 
   app.post '/delta', (req, res) ->
