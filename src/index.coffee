@@ -33,8 +33,9 @@ createApp = ({blobStore, repository, headStore}={}) ->
     res.send delta
 
   app.post '/delta', (req, res) ->
-    repository.treeStore.writeAll req.body.trees, (err, hashs) ->
-      res.send treeHashs: hashs
+    treeHashs = repository.treeStore.writeAll req.body.trees
+    commitHashs = repository.commitStore.writeAll req.body.commits
+    res.send treeHashs: treeHashs, commitHashs: commitHashs
 
   app.put '/head/:branch', (req, res) ->
     headStore.write req.params.branch, req.body.hash

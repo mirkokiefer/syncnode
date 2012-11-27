@@ -99,9 +99,7 @@
         }
         diffHashs = client1.branch.deltaHashs();
         diff = client1.repo.deltaData(diffHashs);
-        return req.post(url('/delta')).send({
-          trees: diff.trees
-        }).end(function(res) {
+        return req.post(url('/delta')).send(diff).end(function(res) {
           var i, _j, _len1, _ref2;
           _ref2 = res.body.treeHashs;
           for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
@@ -131,9 +129,7 @@
           client2.branch.commit(each);
         }
         diff = client2.repo.deltaData(client2.branch.deltaHashs());
-        return req.post(url('/delta')).send({
-          trees: diff.trees
-        }).end(function() {
+        return req.post(url('/delta')).send(diff).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });
@@ -158,17 +154,18 @@
         })(), from = _ref2[0], to = _ref2[1];
         return req.get(url('/delta?from=' + from + '&to=' + to)).end(function(res) {
           client2.repo.treeStore.writeAll(res.body.trees);
+          client2.repo.commitStore.writeAll(res.body.commits);
           return done();
         });
       });
       it('should do a local merge of client1s diff', function() {
-        var head, headTree, oldHead;
+        var head, headObj, oldHead;
         oldHead = client2.branch.head;
         head = client2.branch.merge({
           ref: client2.remotes.client1
         });
-        headTree = client2.repo.treeStore.read(head);
-        return assert.equal(difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0);
+        headObj = client2.repo._commitStore.read(head);
+        return assert.equal(difference(headObj.ancestors, [client2.remotes.client1, oldHead]).length, 0);
       });
       it('should push its new diff to the server', function(done) {
         var delta, deltaData;
@@ -176,9 +173,7 @@
           from: values(client2.remotes)
         });
         deltaData = client2.repo.deltaData(delta);
-        return req.post(url('/delta')).send({
-          trees: deltaData.trees
-        }).end(function() {
+        return req.post(url('/delta')).send(deltaData).end(function() {
           client2.remotes.client2 = client2.branch.head;
           return done();
         });
@@ -208,6 +203,7 @@
           })(), from = _ref2[0], to = _ref2[1];
           return req.get(url('/delta?from=' + from + '&to=' + to)).end(function(res) {
             client1.repo.treeStore.writeAll(res.body.trees);
+            client1.repo.commitStore.writeAll(res.body.commits);
             return done();
           });
         });

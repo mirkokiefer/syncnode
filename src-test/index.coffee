@@ -49,7 +49,7 @@ describe 'http-interface', ->
       client1.branch.commit each for each in dataA
       diffHashs = client1.branch.deltaHashs()
       diff = client1.repo.deltaData diffHashs
-      req.post(url '/delta').send(trees: diff.trees).end (res) ->
+      req.post(url '/delta').send(diff).end (res) ->
         for each, i in res.body.treeHashs
           assert.equal each, diffHashs.trees[i]
         client1.remotes.client1 = client1.branch.head
@@ -63,7 +63,7 @@ describe 'http-interface', ->
     it 'should do some commits and push the diff', (done) ->
       client2.branch.commit each for each in dataB
       diff = client2.repo.deltaData client2.branch.deltaHashs()
-      req.post(url '/delta').send(trees: diff.trees).end () ->
+      req.post(url '/delta').send(diff).end () ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should ask for client1\'s head', (done) ->
@@ -74,16 +74,17 @@ describe 'http-interface', ->
       [from, to] = (JSON.stringify each for each in [[client2.remotes.client2], [client2.remotes.client1]])
       req.get(url '/delta?from='+from+'&to='+to).end (res) ->
         client2.repo.treeStore.writeAll res.body.trees
+        client2.repo.commitStore.writeAll res.body.commits
         done()
     it 'should do a local merge of client1s diff', ->
       oldHead = client2.branch.head
       head = client2.branch.merge ref: client2.remotes.client1
-      headTree = client2.repo.treeStore.read head
-      assert.equal difference(headTree.ancestors, [client2.remotes.client1, oldHead]).length, 0
+      headObj = client2.repo._commitStore.read head
+      assert.equal difference(headObj.ancestors, [client2.remotes.client1, oldHead]).length, 0
     it 'should push its new diff to the server', (done) ->
       delta = client2.branch.deltaHashs from: values(client2.remotes)
       deltaData = client2.repo.deltaData delta
-      req.post(url '/delta').send(trees: deltaData.trees).end ->
+      req.post(url '/delta').send(deltaData).end ->
         client2.remotes.client2 = client2.branch.head
         done()
     it 'should update its head on the server', (done) ->
@@ -96,6 +97,7 @@ describe 'http-interface', ->
         [from, to] = (JSON.stringify each for each in [[client1.remotes.client1], [client1.remotes.client2]])
         req.get(url '/delta?from='+from+'&to='+to).end (res) ->
           client1.repo.treeStore.writeAll res.body.trees
+          client1.repo.commitStore.writeAll res.body.commits
           done()
     it 'does a local fast-forward merge', ->
       head = client1.branch.merge ref: client1.remotes.client2
