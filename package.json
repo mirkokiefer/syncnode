@@ -13,11 +13,17 @@
     "synclib": "0.3.1",
     "content-addressable": "0.0.6",
     "pluggable-store": "0.0.8",
-    "async": "*",
-    "express": "*",
-    "underscore": "*"
+    "underscore": "~1.4.2",
+    "express": "~3.0.3",
+    "async": "~0.1.22"
   },
   "devDependencies": {
-    "superagent": "~0.9.8"
+    "superagent": "~0.9.8",
+    "mocha": "~1.6.0",
+    "coffee-script": "~1.4.0"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script",
+    "build": "./node_modules/.bin/coffee -o ./lib -cw ./src"
   }
 }
