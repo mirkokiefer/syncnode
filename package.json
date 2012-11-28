@@ -1,7 +1,7 @@
 {
   "author": "Mirko Kiefer <mail@mirkokiefer.com>",
   "name": "syncnode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "url": ""
   },
@@ -10,7 +10,7 @@
     "node": ">=0.8"
   },
   "dependencies": {
-    "synclib": "0.2.0",
+    "synclib": "0.3.1",
     "content-addressable": "0.0.6",
     "pluggable-store": "0.0.8",
     "async": "*",
