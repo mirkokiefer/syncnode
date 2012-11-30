@@ -15,8 +15,7 @@
     "pluggable-store": "~0.1.2",
     "underscore": "~1.4.2",
     "express": "~3.0.3",
-    "async": "~0.1.22",
-    "pluggable-cache": "0.0.1"
+    "async": "~0.1.22"
   },
   "devDependencies": {
     "superagent": "~0.9.8",

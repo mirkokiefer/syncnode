@@ -5,17 +5,13 @@ contentAddressable = require 'content-addressable'
 PluggableStore = require 'pluggable-store'
 createMemoryStore = PluggableStore.memory
 createFileStore = PluggableStore.server.fileSystem
-createCache = require 'pluggable-cache'
 {Repository} = require 'synclib'
 
 createApp = ({blobStore, repository, headStore}={}) ->
   app = express()
   app.blobStore = if blobStore then blobStore else contentAddressable.memory()
   app.repository = if repository then repository else new Repository()
-  headStorePersistence = createFileStore process.env.HOME+'/syncnode-heads'
-  app.headStore = if headStore then headStore else
-    #createCache cache: createMemoryStore(), persistence: headStorePersistence
-    createMemoryStore()
+  app.headStore = if headStore then headStore else createMemoryStore()
   [blobStore, repository, headStore] = [app.blobStore, app.repository, app.headStore]
   app.configure ->
     app.use express.cookieParser()
