@@ -2,14 +2,20 @@ express = require 'express'
 _ = require 'underscore'
 async = require 'async'
 contentAddressable = require 'content-addressable'
-createMemoryStore = require('pluggable-store').memory
+PluggableStore = require 'pluggable-store'
+createMemoryStore = PluggableStore.memory
+createFileStore = PluggableStore.server.fileSystem
+createCache = require 'pluggable-cache'
 {Repository} = require 'synclib'
 
 createApp = ({blobStore, repository, headStore}={}) ->
   app = express()
   app.blobStore = if blobStore then blobStore else contentAddressable.memory()
   app.repository = if repository then repository else new Repository()
-  app.headStore = if headStore then headStore else createMemoryStore()
+  headStorePersistence = createFileStore process.env.HOME+'/syncnode-heads'
+  app.headStore = if headStore then headStore else
+    #createCache cache: createMemoryStore(), persistence: headStorePersistence
+    createMemoryStore()
   [blobStore, repository, headStore] = [app.blobStore, app.repository, app.headStore]
   app.configure ->
     app.use express.cookieParser()
@@ -37,14 +43,17 @@ createApp = ({blobStore, repository, headStore}={}) ->
       res.send ok: 'success'
 
   app.put '/head/:branch', (req, res) ->
-    headStore.write req.params.branch, req.body.hash
-    res.send ok: 'success'
+    headStore.write req.params.branch, req.body.hash, ->
+      res.send ok: 'success'
 
   app.get '/head', (req, res) ->
-    res.send heads: (name: each, head: headStore.read each for each in headStore.keys())
+    headStore.keys (err, keys) ->
+      async.map keys, ((each, cb) -> headStore.read each, cb), (err, heads) ->
+        res.send heads: (name: keys[i], head: each for each, i in heads)
 
   app.get '/head/:branch', (req, res) ->
-    res.send hash: headStore.read req.params.branch
+    headStore.read req.params.branch, (err, head) ->
+      res.send hash: head
 
   app.post '/blob', (req, res) ->
     blobStore.write JSON.stringify(req.body), (err, hash) ->
