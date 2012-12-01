@@ -5,7 +5,7 @@ contentAddressable = require 'content-addressable'
 PluggableStore = require 'pluggable-store'
 createMemoryStore = PluggableStore.memory
 createFileStore = PluggableStore.server.fileSystem
-{Repository} = require 'synclib'
+{Repository} = synclib = require 'synclib'
 
 createApp = ({blobStore, repository, headStore}={}) ->
   app = express()
@@ -60,4 +60,5 @@ createApp = ({blobStore, repository, headStore}={}) ->
       res.send JSON.parse(data)
   app
 
+createApp.synclib = synclib
 module.exports = createApp
