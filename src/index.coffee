@@ -4,7 +4,6 @@ async = require 'async'
 contentAddressable = require 'content-addressable'
 PluggableStore = require 'pluggable-store'
 createMemoryStore = PluggableStore.memory
-createFileStore = PluggableStore.server.fileSystem
 {Repository} = synclib = require 'synclib'
 
 createApp = ({blobStore, repository, headStore}={}) ->
